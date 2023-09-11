@@ -2,27 +2,14 @@
 
 ## Introduction
 
-TODO Describe what your plugin does here
+Appdome Validation plugin - troubleshoot app signing in secured android & iOS apps.
+The service also verifies that the app wasn’t tampered with in any way that may prevent it from running on any mobile device.
 
 ## Getting started
 
-TODO Tell users how to configure your plugin here, include screenshots, pipeline examples and 
-configuration-as-code examples.
+For documentation on how to use the plugin, see the [Appdome Validate-2secure plugin](https://www.appdome.com/how-to/devsecops-automation-mobile-cicd/mobile-app-security-anti-fraud-cicd/use-appdome-validate-2secure-plugin-for-jenkins/).
 
 ## Issues
 
-TODO Decide where you're going to host your issues, the default is Jenkins JIRA, but you can also enable GitHub issues,
-If you use GitHub issues there's no need for this section; else add the following line:
-
-Report issues and enhancements in the [Jenkins issue tracker](https://issues.jenkins.io/).
-
-## Contributing
-
-TODO review the default [CONTRIBUTING](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md) file and make sure it is appropriate for your plugin, if not then add your own one adapted from the base file
-
-Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md)
-
-## LICENSE
-
-Licensed under MIT, see [LICENSE](LICENSE.md)
+Please report issues and enhancements through the [Github issue tracker](https://github.com/jenkinsci/appdome-validate-2secure-plugin/issues/new/choose).
 

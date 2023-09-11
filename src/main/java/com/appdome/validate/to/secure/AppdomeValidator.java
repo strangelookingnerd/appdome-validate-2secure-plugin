@@ -54,7 +54,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
                 .println("Updating Appdome Engine...");
 
         ArgumentListBuilder gitCloneCommand =
-                new ArgumentListBuilder("git", "clone", "-b", "add-appdome-validate", "https://github.com/Appdome/appdome-api-bash.git");
+                new ArgumentListBuilder("git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
         return launcher.launch()
                 .cmds(gitCloneCommand)
                 .pwd(appdomeWorkspace)
@@ -96,7 +96,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
         env.put(APPDOME_HEADER_ENV_NAME, APPDOME_BUILDE2SECURE_VERSION);
-        listener.getLogger().println("Launching Appdome Validators");
+        listener.getLogger().println("Launching Appdome Validator");
         ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
 
         int exitCode = launcher.launch()
