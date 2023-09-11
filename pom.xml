@@ -7,7 +7,7 @@
     <version>4.73</version>
     <relativePath />
   </parent>
-  <groupId>com.appdome</groupId>
+  <groupId>io.jenkins.plugins</groupId>
   <artifactId>appdome-validate-2secure</artifactId>
   <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
