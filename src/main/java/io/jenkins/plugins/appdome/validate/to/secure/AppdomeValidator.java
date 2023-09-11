@@ -1,7 +1,9 @@
 package io.jenkins.plugins.appdome.validate.to.secure;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import static io.jenkins.plugins.appdome.validate.to.secure.AppdomeValidateConstants.*;
+import static io.jenkins.plugins.appdome.validate.to.secure.Utils.*;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.*;
 import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
@@ -9,20 +11,16 @@ import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import java.io.*;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
-
-import java.io.*;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static io.jenkins.plugins.appdome.validate.to.secure.AppdomeValidateConstants.*;
-import static io.jenkins.plugins.appdome.validate.to.secure.Utils.*;
 
 public class AppdomeValidator extends Builder implements SimpleBuildStep {
     private final Secret token;
@@ -33,7 +31,6 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         this.token = token;
         this.appPath = appPath;
     }
-
 
     /**
      * Clones the Appdome API repository.
@@ -46,10 +43,9 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
      * @throws IOException          if an I/O error occurs
      * @throws InterruptedException if the process is interrupted
      */
-    private int CloneAppdomeApi(TaskListener listener, FilePath appdomeWorkspace, Launcher launcher) throws IOException, InterruptedException {
-        listener
-                .getLogger()
-                .println("Updating Appdome Engine...");
+    private int CloneAppdomeApi(TaskListener listener, FilePath appdomeWorkspace, Launcher launcher)
+            throws IOException, InterruptedException {
+        listener.getLogger().println("Updating Appdome Engine...");
 
         ArgumentListBuilder gitCloneCommand =
                 new ArgumentListBuilder("git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
@@ -61,15 +57,18 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(@NonNull Run<?, ?> run, @NonNull FilePath workspace, @NonNull EnvVars env,
-                        @NonNull Launcher launcher, @NonNull TaskListener listener) throws InterruptedException, IOException {
+    public void perform(
+            @NonNull Run<?, ?> run,
+            @NonNull FilePath workspace,
+            @NonNull EnvVars env,
+            @NonNull Launcher launcher,
+            @NonNull TaskListener listener)
+            throws InterruptedException, IOException {
         int exitCode;
         FilePath appdomeWorkspace = workspace.createTempDir("AppdomeValidation", "Validate");
         exitCode = CloneAppdomeApi(listener, appdomeWorkspace, launcher);
         if (exitCode == 0) {
-            listener
-                    .getLogger()
-                    .println("Appdome engine updated successfully");
+            listener.getLogger().println("Appdome engine updated successfully");
             try {
                 ExecuteAppdomeApi(run, listener, appdomeWorkspace, env, launcher);
             } catch (Exception e) {
@@ -83,16 +82,17 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         deleteAppdomeWorkspacce(listener, appdomeWorkspace);
     }
 
-    private void ExecuteAppdomeApi(Run<?, ?> run, TaskListener listener, FilePath appdomeWorkspace, EnvVars env, Launcher launcher) throws IOException, InterruptedException {
+    private void ExecuteAppdomeApi(
+            Run<?, ?> run, TaskListener listener, FilePath appdomeWorkspace, EnvVars env, Launcher launcher)
+            throws IOException, InterruptedException {
         FilePath scriptPath = appdomeWorkspace.child("appdome-api-bash");
         String command = ComposeAppdomeValidateCommand(appdomeWorkspace, env, launcher, listener);
         if (command.equals("")) {
             run.setResult(Result.FAILURE);
             return;
         }
-        List<String> filteredCommandList = Stream.of(command.split(" "))
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+        List<String> filteredCommandList =
+                Stream.of(command.split(" ")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
         env.put(APPDOME_HEADER_ENV_NAME, APPDOME_BUILDE2SECURE_VERSION);
         listener.getLogger().println("Launching Appdome Validator");
         ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
@@ -105,7 +105,8 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
                 .stdout(listener.getLogger())
                 .stderr(listener.getLogger())
                 .quiet(true)
-                .start().join();
+                .start()
+                .join();
 
         if (exitCode == 0) {
             Boolean isSignedCorrectly = false;
@@ -117,7 +118,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
                 if (logEntry.contains("This app is not built by Appdome")) {
                     // If "This app is not built by Appdome" is found, set the result to UNSTABLE
                     result = Result.UNSTABLE;
-                    break;  // Exit the loop since we found an unstable condition
+                    break; // Exit the loop since we found an unstable condition
                 } else if (logEntry.contains("This app is signed correctly")) {
                     // If "This app is signed correctly" is found, continue the loop
                     isSignedCorrectly = true;
@@ -130,23 +131,27 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             // Set the result based on the conditions
             run.setResult(result);
         } else {
-            listener.error("Couldn't run Appdome Verification, exitcode " + exitCode + ".\nCouldn't run Appdome Verification, read logs for more information.");
+            listener.error("Couldn't run Appdome Verification, exitcode " + exitCode
+                    + ".\nCouldn't run Appdome Verification, read logs for more information.");
             run.setResult(Result.FAILURE);
         }
     }
 
-
-    private String ComposeAppdomeValidateCommand(FilePath appdomeWorkspace, EnvVars env, Launcher launcher, TaskListener listener) throws IOException, InterruptedException {
+    private String ComposeAppdomeValidateCommand(
+            FilePath appdomeWorkspace, EnvVars env, Launcher launcher, TaskListener listener)
+            throws IOException, InterruptedException {
         StringBuilder command = new StringBuilder("./appdome_api_bash/validate.sh");
-        command.append(KEY_FLAG)
-                .append(this.token);
+        command.append(KEY_FLAG).append(this.token);
         String appPath = "";
-        //concatenate the app path if it is not empty:
+        // concatenate the app path if it is not empty:
         if (!(Util.fixEmptyAndTrim(this.appPath) == null)) {
             appPath = DownloadFilesOrContinue(this.appPath, appdomeWorkspace, launcher);
         } else {
-            appPath = DownloadFilesOrContinue(UseEnvironmentVariable(env, APP_PATH,
-                    appPath, APP_FLAG.trim().substring(2)), appdomeWorkspace, launcher);
+            appPath = DownloadFilesOrContinue(
+                    UseEnvironmentVariable(
+                            env, APP_PATH, appPath, APP_FLAG.trim().substring(2)),
+                    appdomeWorkspace,
+                    launcher);
         }
 
         if (appPath.isEmpty()) {
@@ -154,8 +159,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         } else {
             File file = new File(appPath);
             if (file.exists()) {
-                command.append(APP_FLAG)
-                        .append(appPath);
+                command.append(APP_FLAG).append(appPath);
                 listener.getLogger().println("Validating app " + new File(appPath).getName());
 
             } else {
@@ -164,7 +168,6 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             }
         }
         return command.toString();
-
     }
 
     public Secret getToken() {
@@ -195,19 +198,21 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         public FormValidation doCheckAppPath(@QueryParameter String appPath) {
             Jenkins.get().checkPermission(Jenkins.READ);
             if (appPath != null && Util.fixEmptyAndTrim(appPath) == null) {
-                return FormValidation.warning("Application path was not provided.\n " +
-                        "Or please ensure that a valid path is provided for application in the environment variable" +
-                        " named " + APP_PATH + ".");
+                return FormValidation.warning("Application path was not provided.\n "
+                        + "Or please ensure that a valid path is provided for application in the environment variable"
+                        + " named "
+                        + APP_PATH + ".");
             } else if (appPath != null && appPath.contains(" ")) {
                 return FormValidation.error("White spaces are not allowed in the path.");
-            } else if (appPath != null && !(appPath.endsWith(".aab") || appPath.endsWith(".apk") || (appPath.endsWith(".ipa")))) {
-                return FormValidation.error("Application - File extension is not allowed," +
-                        " allowed extensions are: '.apk' or '.aab'. Please rename your file or upload a different file.");
+            } else if (appPath != null
+                    && !(appPath.endsWith(".aab") || appPath.endsWith(".apk") || (appPath.endsWith(".ipa")))) {
+                return FormValidation.error(
+                        "Application - File extension is not allowed,"
+                                + " allowed extensions are: '.apk' or '.aab'. Please rename your file or upload a different file.");
             }
             // Perform any additional validation here
             return FormValidation.ok();
         }
-
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
@@ -218,6 +223,5 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         public String getDisplayName() {
             return "Appdome Validate-2secure";
         }
-
     }
 }
