@@ -1,0 +1,16 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+    <f:entry title="${%Token}" field="token" description="Appdome-provided API token">
+        <div style="align-items: center;">
+            <f:password/>
+        </div>
+    </f:entry>
+
+
+    <f:entry title="${%Application path}" field="appPath" description="Input application">
+        <f:textbox/>
+    </f:entry>
+
+</j:jelly>

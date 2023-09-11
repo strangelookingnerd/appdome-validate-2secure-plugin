@@ -1,0 +1,2 @@
+_extends: .github
+tag-template: appdome-validate-2secure-$NEXT_MINOR_VERSION
