@@ -141,7 +141,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             FilePath appdomeWorkspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
         StringBuilder command = new StringBuilder("./appdome_api_bash/validate.sh");
-        command.append(KEY_FLAG).append(this.token.getPlainText());
+        command.append(KEY_FLAG).append(this.getToken());
         String appPath = "";
         // concatenate the app path if it is not empty:
         if (!(Util.fixEmptyAndTrim(this.appPath) == null)) {
