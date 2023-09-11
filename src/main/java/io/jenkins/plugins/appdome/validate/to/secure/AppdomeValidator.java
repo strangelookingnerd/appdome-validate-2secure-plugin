@@ -1,4 +1,4 @@
-package com.appdome.validate.to.secure;
+package io.jenkins.plugins.appdome.validate.to.secure;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -17,14 +17,12 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.appdome.validate.to.secure.AppdomeValidateConstants.*;
-import static com.appdome.validate.to.secure.Utils.*;
+import static io.jenkins.plugins.appdome.validate.to.secure.AppdomeValidateConstants.*;
+import static io.jenkins.plugins.appdome.validate.to.secure.Utils.*;
 
 public class AppdomeValidator extends Builder implements SimpleBuildStep {
     private final Secret token;

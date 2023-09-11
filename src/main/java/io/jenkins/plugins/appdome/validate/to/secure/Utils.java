@@ -1,4 +1,4 @@
-package com.appdome.validate.to.secure;
+package io.jenkins.plugins.appdome.validate.to.secure;
 
 import hudson.EnvVars;
 import hudson.FilePath;

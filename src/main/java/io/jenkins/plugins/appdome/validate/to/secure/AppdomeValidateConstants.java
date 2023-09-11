@@ -1,4 +1,4 @@
-package com.appdome.validate.to.secure;
+package io.jenkins.plugins.appdome.validate.to.secure;
 
 public interface AppdomeValidateConstants {
     /**
