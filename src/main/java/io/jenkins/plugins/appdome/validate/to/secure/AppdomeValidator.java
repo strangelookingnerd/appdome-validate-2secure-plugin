@@ -11,10 +11,12 @@ import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+
 import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
@@ -25,11 +27,13 @@ import org.kohsuke.stapler.verb.POST;
 public class AppdomeValidator extends Builder implements SimpleBuildStep {
     private final Secret token;
     private String appPath;
+    private String outputLocation;
 
     @DataBoundConstructor
-    public AppdomeValidator(Secret token, String appPath) {
+    public AppdomeValidator(Secret token, String appPath, String outputLocation) {
         this.token = token;
         this.appPath = appPath;
+        this.outputLocation = outputLocation;
     }
 
     /**
@@ -47,8 +51,8 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             throws IOException, InterruptedException {
         listener.getLogger().println("Updating Appdome Engine...");
 
-        ArgumentListBuilder gitCloneCommand =
-                new ArgumentListBuilder("git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
+        ArgumentListBuilder gitCloneCommand = new ArgumentListBuilder(
+                "git", "clone", "-b", "add-appdome-validate", "https://github.com/Appdome/appdome-api-bash.git");
         return launcher.launch()
                 .cmds(gitCloneCommand)
                 .pwd(appdomeWorkspace)
@@ -70,7 +74,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         if (exitCode == 0) {
             listener.getLogger().println("Appdome engine updated successfully");
             try {
-                ExecuteAppdomeApi(run, listener, appdomeWorkspace, env, launcher);
+                ExecuteAppdomeApi(run, listener, appdomeWorkspace, workspace, env, launcher);
             } catch (Exception e) {
                 listener.error("Couldn't run Appdome Verification, read logs for more information. error:" + e);
                 run.setResult(Result.FAILURE);
@@ -83,10 +87,10 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
     }
 
     private void ExecuteAppdomeApi(
-            Run<?, ?> run, TaskListener listener, FilePath appdomeWorkspace, EnvVars env, Launcher launcher)
+            Run<?, ?> run, TaskListener listener, FilePath appdomeWorkspace, FilePath agentWorkspace, EnvVars env, Launcher launcher)
             throws IOException, InterruptedException {
         FilePath scriptPath = appdomeWorkspace.child("appdome-api-bash");
-        String command = ComposeAppdomeValidateCommand(appdomeWorkspace, env, launcher, listener);
+        String command = ComposeAppdomeValidateCommand(appdomeWorkspace, agentWorkspace, env, launcher, listener);
         if (command.equals("")) {
             run.setResult(Result.FAILURE);
             return;
@@ -138,7 +142,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
     }
 
     private String ComposeAppdomeValidateCommand(
-            FilePath appdomeWorkspace, EnvVars env, Launcher launcher, TaskListener listener)
+            FilePath appdomeWorkspace, FilePath agentWorkspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws IOException, InterruptedException {
         StringBuilder command = new StringBuilder("./appdome_api_bash/validate.sh");
         command.append(KEY_FLAG).append(this.getToken());
@@ -167,6 +171,39 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
                 return "";
             }
         }
+
+
+        if (!(Util.fixEmptyAndTrim(this.outputLocation) == null)) {
+
+
+            if (this.outputLocation.toLowerCase().endsWith(".json")) {
+                command.append(OUTPUT_FLAG).append(this.outputLocation);
+            } else if (this.outputLocation.endsWith("/")) {
+                ArgumentListBuilder args = new ArgumentListBuilder("mkdir", this.outputLocation);
+                launcher.launch()
+                        .cmds(args)
+                        .pwd(agentWorkspace)
+                        .quiet(true)
+                        .join();
+                command.append(OUTPUT_FLAG).append(this.outputLocation).append(File.separator).append(VALIDATION_RESULTS_NAME);
+            }
+            else
+            {
+                listener.error("Output location is not valid. Result won't be save to a JSON file.");
+            }
+        } else {
+            String outputLocationMissing = "";
+            if (!isHttpUrl(this.appPath)) {
+                outputLocationMissing = (appPath.substring(0, appPath.lastIndexOf("/") + 1)).concat(VALIDATION_RESULTS_NAME);
+                command.append(OUTPUT_FLAG).append(outputLocationMissing);
+                listener.getLogger().println("WARNING: The output location for the JSON result was not provided. " +
+                        "The JSON data will be saved to " + outputLocationMissing);
+
+            } else {
+                listener.getLogger().println("ERROR: Result won't be save to a JSON file.");
+            }
+        }
+
         return command.toString();
     }
 
@@ -176,6 +213,14 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
 
     public String getAppPath() {
         return appPath;
+    }
+
+    public String getOutputLocation() {
+        return outputLocation;
+    }
+
+    public void setOutputLocation(String outputLocation) {
+        this.outputLocation = outputLocation;
     }
 
     @Symbol("AppdomeValidator")
@@ -211,6 +256,35 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
                                 + " allowed extensions are: '.apk' or '.aab'. Please rename your file or upload a different file.");
             }
             // Perform any additional validation here
+            return FormValidation.ok();
+        }
+
+        @POST
+        public FormValidation doCheckOutputLocation(@QueryParameter String outputLocation,@QueryParameter String appPath) {
+            Jenkins.get().checkPermission(Jenkins.READ);
+            if (outputLocation != null && Util.fixEmptyAndTrim(outputLocation) == null) {
+                if ((appPath != null && Util.fixEmptyAndTrim(appPath) != null) && !isHttpUrl(appPath)){
+                    String outputLocationMissing = (appPath.substring(0, appPath.lastIndexOf("/") + 1)).concat(VALIDATION_RESULTS_NAME);
+                    return FormValidation.warning("Output path for JSON file was not provided. and it will be saved to " + outputLocationMissing);
+                }
+                else
+                {
+                    return FormValidation.warning("Output path for JSON file was not provided.");
+                }
+            } else if (outputLocation != null && outputLocation.contains(" ")) {
+                return FormValidation.error("White spaces are not allowed in the path.");
+            }
+            else if (outputLocation != null && outputLocation.endsWith("/")) {
+                return FormValidation.ok("Output JSON result file will be saved to " + outputLocation + VALIDATION_RESULTS_NAME);
+            }
+            else if   (outputLocation != null && Util.fixEmptyAndTrim(outputLocation) != null && outputLocation.endsWith(".json"))
+            {
+                return FormValidation.ok("JSON result file will be saved to " + outputLocation);
+            }
+            else if   (outputLocation != null && Util.fixEmptyAndTrim(outputLocation) != null) {
+                return FormValidation.error("Please provide a valid path to JSON file results.");
+            }
+
             return FormValidation.ok();
         }
 

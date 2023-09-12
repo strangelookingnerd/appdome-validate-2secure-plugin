@@ -17,5 +17,5 @@ public interface AppdomeValidateConstants {
     String APP_FLAG = " --app ";
     String OUTPUT_FLAG = " --output ";
 
-    String RESULTS_PATH = "results.json";
+    String VALIDATION_RESULTS_NAME = "validation_results.json";
 }

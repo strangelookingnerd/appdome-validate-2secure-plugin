@@ -13,4 +13,8 @@
         <f:textbox/>
     </f:entry>
 
+    <f:entry title="${%Output path to json results file}" field="outputLocation" description="Output validation results (JSON)">
+        <f:textbox/>
+    </f:entry>
+
 </j:jelly>
