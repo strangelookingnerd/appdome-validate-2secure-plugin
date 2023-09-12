@@ -11,12 +11,10 @@ import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
-
 import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
@@ -87,7 +85,12 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
     }
 
     private void ExecuteAppdomeApi(
-            Run<?, ?> run, TaskListener listener, FilePath appdomeWorkspace, FilePath agentWorkspace, EnvVars env, Launcher launcher)
+            Run<?, ?> run,
+            TaskListener listener,
+            FilePath appdomeWorkspace,
+            FilePath agentWorkspace,
+            EnvVars env,
+            Launcher launcher)
             throws IOException, InterruptedException {
         FilePath scriptPath = appdomeWorkspace.child("appdome-api-bash");
         String command = ComposeAppdomeValidateCommand(appdomeWorkspace, agentWorkspace, env, launcher, listener);
@@ -172,32 +175,29 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             }
         }
 
-
         if (!(Util.fixEmptyAndTrim(this.outputLocation) == null)) {
-
 
             if (this.outputLocation.toLowerCase().endsWith(".json")) {
                 command.append(OUTPUT_FLAG).append(this.outputLocation);
             } else if (this.outputLocation.endsWith("/")) {
                 ArgumentListBuilder args = new ArgumentListBuilder("mkdir", this.outputLocation);
-                launcher.launch()
-                        .cmds(args)
-                        .pwd(agentWorkspace)
-                        .quiet(true)
-                        .join();
-                command.append(OUTPUT_FLAG).append(this.outputLocation).append(File.separator).append(VALIDATION_RESULTS_NAME);
-            }
-            else
-            {
+                launcher.launch().cmds(args).pwd(agentWorkspace).quiet(true).join();
+                command.append(OUTPUT_FLAG)
+                        .append(this.outputLocation)
+                        .append(File.separator)
+                        .append(VALIDATION_RESULTS_NAME);
+            } else {
                 listener.error("Output location is not valid. Result won't be save to a JSON file.");
             }
         } else {
             String outputLocationMissing = "";
             if (!isHttpUrl(this.appPath)) {
-                outputLocationMissing = (appPath.substring(0, appPath.lastIndexOf("/") + 1)).concat(VALIDATION_RESULTS_NAME);
+                outputLocationMissing =
+                        (appPath.substring(0, appPath.lastIndexOf("/") + 1)).concat(VALIDATION_RESULTS_NAME);
                 command.append(OUTPUT_FLAG).append(outputLocationMissing);
-                listener.getLogger().println("WARNING: The output location for the JSON result was not provided. " +
-                        "The JSON data will be saved to " + outputLocationMissing);
+                listener.getLogger()
+                        .println("WARNING: The output location for the JSON result was not provided. "
+                                + "The JSON data will be saved to " + outputLocationMissing);
 
             } else {
                 listener.getLogger().println("ERROR: Result won't be save to a JSON file.");
@@ -260,28 +260,28 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         }
 
         @POST
-        public FormValidation doCheckOutputLocation(@QueryParameter String outputLocation,@QueryParameter String appPath) {
+        public FormValidation doCheckOutputLocation(
+                @QueryParameter String outputLocation, @QueryParameter String appPath) {
             Jenkins.get().checkPermission(Jenkins.READ);
             if (outputLocation != null && Util.fixEmptyAndTrim(outputLocation) == null) {
-                if ((appPath != null && Util.fixEmptyAndTrim(appPath) != null) && !isHttpUrl(appPath)){
-                    String outputLocationMissing = (appPath.substring(0, appPath.lastIndexOf("/") + 1)).concat(VALIDATION_RESULTS_NAME);
-                    return FormValidation.warning("Output path for JSON file was not provided. and it will be saved to " + outputLocationMissing);
-                }
-                else
-                {
+                if ((appPath != null && Util.fixEmptyAndTrim(appPath) != null) && !isHttpUrl(appPath)) {
+                    String outputLocationMissing =
+                            (appPath.substring(0, appPath.lastIndexOf("/") + 1)).concat(VALIDATION_RESULTS_NAME);
+                    return FormValidation.warning("Output path for JSON file was not provided. and it will be saved to "
+                            + outputLocationMissing);
+                } else {
                     return FormValidation.warning("Output path for JSON file was not provided.");
                 }
             } else if (outputLocation != null && outputLocation.contains(" ")) {
                 return FormValidation.error("White spaces are not allowed in the path.");
-            }
-            else if (outputLocation != null && outputLocation.endsWith("/")) {
-                return FormValidation.ok("Output JSON result file will be saved to " + outputLocation + VALIDATION_RESULTS_NAME);
-            }
-            else if   (outputLocation != null && Util.fixEmptyAndTrim(outputLocation) != null && outputLocation.endsWith(".json"))
-            {
+            } else if (outputLocation != null && outputLocation.endsWith("/")) {
+                return FormValidation.ok(
+                        "Output JSON result file will be saved to " + outputLocation + VALIDATION_RESULTS_NAME);
+            } else if (outputLocation != null
+                    && Util.fixEmptyAndTrim(outputLocation) != null
+                    && outputLocation.endsWith(".json")) {
                 return FormValidation.ok("JSON result file will be saved to " + outputLocation);
-            }
-            else if   (outputLocation != null && Util.fixEmptyAndTrim(outputLocation) != null) {
+            } else if (outputLocation != null && Util.fixEmptyAndTrim(outputLocation) != null) {
                 return FormValidation.error("Please provide a valid path to JSON file results.");
             }
 
