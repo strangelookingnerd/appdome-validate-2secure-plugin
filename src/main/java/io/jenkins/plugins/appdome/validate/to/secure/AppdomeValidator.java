@@ -49,8 +49,8 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             throws IOException, InterruptedException {
         listener.getLogger().println("Updating Appdome Engine...");
 
-        ArgumentListBuilder gitCloneCommand = new ArgumentListBuilder(
-                "git", "clone", "-b", "add-appdome-validate", "https://github.com/Appdome/appdome-api-bash.git");
+        ArgumentListBuilder gitCloneCommand =
+                new ArgumentListBuilder("git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
         return launcher.launch()
                 .cmds(gitCloneCommand)
                 .pwd(appdomeWorkspace)
