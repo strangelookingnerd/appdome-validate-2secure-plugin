@@ -19,6 +19,7 @@ import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 
@@ -28,10 +29,9 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
     private String outputLocation;
 
     @DataBoundConstructor
-    public AppdomeValidator(Secret token, String appPath, String outputLocation) {
+    public AppdomeValidator(Secret token, String appPath) {
         this.token = token;
         this.appPath = appPath;
-        this.outputLocation = outputLocation;
     }
 
     /**
@@ -49,8 +49,8 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             throws IOException, InterruptedException {
         listener.getLogger().println("Updating Appdome Engine...");
 
-        ArgumentListBuilder gitCloneCommand =
-                new ArgumentListBuilder("git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
+        ArgumentListBuilder gitCloneCommand = new ArgumentListBuilder(
+                "git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
         return launcher.launch()
                 .cmds(gitCloneCommand)
                 .pwd(appdomeWorkspace)
@@ -219,6 +219,7 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
         return outputLocation;
     }
 
+    @DataBoundSetter
     public void setOutputLocation(String outputLocation) {
         this.outputLocation = outputLocation;
     }
