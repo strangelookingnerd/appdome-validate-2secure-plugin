@@ -15,6 +15,7 @@ import java.io.*;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.swing.*;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
@@ -49,8 +50,8 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             throws IOException, InterruptedException {
         listener.getLogger().println("Updating Appdome Engine...");
 
-        ArgumentListBuilder gitCloneCommand = new ArgumentListBuilder(
-                "git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
+        ArgumentListBuilder gitCloneCommand =
+                new ArgumentListBuilder("git", "clone", "https://github.com/Appdome/appdome-api-bash.git");
         return launcher.launch()
                 .cmds(gitCloneCommand)
                 .pwd(appdomeWorkspace)
@@ -157,14 +158,14 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             appPath = DownloadFilesOrContinue(
                     UseEnvironmentVariable(
                             env, APP_PATH, appPath, APP_FLAG.trim().substring(2)),
-                    appdomeWorkspace,
+                    agentWorkspace,
                     launcher);
         }
 
         if (appPath.isEmpty()) {
             throw new RuntimeException("App path was not provided.");
         } else {
-            File file = new File(appPath);
+            FilePath file = new FilePath(agentWorkspace, appPath);
             if (file.exists()) {
                 command.append(APP_FLAG).append(appPath);
                 listener.getLogger().println("Validating app " + new File(appPath).getName());
