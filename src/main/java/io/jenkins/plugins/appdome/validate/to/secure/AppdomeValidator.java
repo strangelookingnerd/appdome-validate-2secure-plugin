@@ -154,8 +154,8 @@ public class AppdomeValidator extends Builder implements SimpleBuildStep {
             command.append(KEY_FLAG).append(this.getToken());
         } else {
             listener.fatalError("Appdome-provided API token was not provided.");
-            return "";        }
-
+            return "";
+        }
 
         String appPath = "";
         // concatenate the app path if it is not empty:
